@@ -5,8 +5,8 @@ const TASK_STATE_PLAY = "play";
 /** Enable debug log */
 const LOG_DEBUG = false;
 
-/** Default change time in minuts */
-const DEFAULT_TIME_CHAGNE = 10;
+/** Default change time in minuets */
+const DEFAULT_TIME_CHANGE = 10;
 
 /**
  * Interval ID holder
@@ -104,6 +104,7 @@ $('body')
   })
   .on('click', '.recording-item .time', function (evt) {
     if (evt.altKey) {
+      evt.stopPropagation();
       let taskElement = $(this).parent()[0];
       // Show unchanged task name
       let nameDlg = $('#timeChangeDlg input')[0];
@@ -113,7 +114,6 @@ $('body')
       // Show dialog on new location
       showChangeTimeDialog($(this), taskElement.id);
     }
-    evt.stopPropagation();
   })
   /**
    * Add time to task
@@ -132,7 +132,7 @@ $('body')
     let taskTimeElement = $('#' + task1.id + ' .time');
     taskTimeElement.text(('' + task1.time).toTime());
   })
-    /**
+  /**
    * Remove time from task
    */
   .on('click', '#remove-time', function (evt) {
@@ -172,47 +172,43 @@ $('body')
     // Save changes on blur on press of the enter key
     if (evt.keyCode === 13) {
       let taskId = $(this)[0].getAttribute('for');
-      if (LOG_DEBUG)
-        console.log('Save task ', taskId, ' with new name:', $(this)[0].value);
-      // Update name
-      let task1 = getTaskById(taskId);
-      task1.name = $(this)[0].value;
-      changeTaskName(task1);
-      // Update task's name on UI and show name
-      let taskNameElement = $('#' + task1.id + ' .name');
-      taskNameElement.text(task1.name);
-      taskNameElement.css('opacity', '1');
-      // Hide dialog
-      $('#nameDlg').hide();
+      saveTaskNameAndHideNameDlg(taskId);
     }
   })
+  /**
+   * Save task name
+   */
   .on('blur', '#nameDlg input', function () {
     // Save changes on blur on press of the enter key
     let taskId = $(this)[0].getAttribute('for');
-    if (LOG_DEBUG)
-      console.log('Save task ', taskId, ' with new name:', $(this)[0].value);
-    // Update name
-    let task1 = getTaskById(taskId);
-    task1.name = $(this)[0].value;
-    changeTaskName(task1);
-    // Update task's name on UI and show name
-    let taskNameElement = $('#' + task1.id + ' .name');
-    taskNameElement.text(task1.name);
-    taskNameElement.css('opacity', '1');
-    // Hide dialog
-    $('#nameDlg').hide();
+    saveTaskNameAndHideNameDlg(taskId);
   });
 
+
 // noinspection JSJQueryEfficiency
-$('body').dblclick(function () {
-  showTotalTimeLabel = !showTotalTimeLabel;
-  if (showTotalTimeLabel) {
-    $('#sum').fadeIn();
-    updateTotalTime();
-  } else {
-    $('#sum').fadeOut();
-  }
-});
+$('body')
+  .dblclick(function () {
+    showTotalTimeLabel = !showTotalTimeLabel;
+    if (showTotalTimeLabel) {
+      $('#sum').fadeIn();
+      updateTotalTime();
+    } else {
+      $('#sum').fadeOut();
+    }
+  })
+  /**
+   * Reset time for all tasks.
+   * Shortcut: Ctrl + Shift + E
+   */
+  .keypress(function (evt) {
+    // Save changes on blur on press of the enter key
+    if (evt.code === 'KeyE' && evt.ctrlKey && evt.shiftKey) {
+      if (LOG_DEBUG)
+        console.log('Reset time on all tasks');
+      resetAllTasksTime();
+      location.reload();
+    }
+  });
 
 /**
  * Opens rename task dialog.
@@ -247,6 +243,26 @@ function showNameDialog(element, taskId) {
 }
 
 /**
+ * Save task name and close name dialog
+ *
+ * @param taskId
+ */
+function saveTaskNameAndHideNameDlg(taskId) {
+  if (LOG_DEBUG)
+    console.log('Save task ', taskId, ' with new name:', $(this)[0].value);
+  // Update name
+  let task1 = getTaskById(taskId);
+  task1.name = $(this)[0].value;
+  changeTaskName(task1);
+  // Update task's name on UI and show name
+  let taskNameElement = $('#' + task1.id + ' .name');
+  taskNameElement.text(task1.name);
+  taskNameElement.css('opacity', '1');
+  // Hide dialog
+  $('#nameDlg').hide();
+}
+
+/**
  * Opens rename task dialog.
  *
  * @param element Task element on witch rename is performed
@@ -273,7 +289,7 @@ function showChangeTimeDialog(element, taskId) {
 
   // Set current name to input; focus and select text
   let nameInputField = $('#timeChangeDlg input')[0];
-  nameInputField.value = DEFAULT_TIME_CHAGNE;
+  nameInputField.value = DEFAULT_TIME_CHANGE;
   nameInputField.setAttribute('for', taskId);
   nameInputField.focus();
   nameInputField.select();
@@ -281,7 +297,8 @@ function showChangeTimeDialog(element, taskId) {
 
 function updateTotalTime() {
   if (!showTotalTimeLabel) {
-    console.log('Total time update disabled');
+    if (LOG_DEBUG)
+      console.log('Total time update disabled');
     return
   }
   console.log('Total time update enabled');
@@ -455,6 +472,17 @@ function removeTask(taskId) {
   if (indexOfTaskToRemove > -1) {
     taskRepository.splice(indexOfTaskToRemove, 1);
   }
+  localStorage["taskRepository"] = JSON.stringify(taskRepository);
+}
+
+/**
+ * Reset time on all tasks
+ */
+function resetAllTasksTime() {
+  let taskRepository = JSON.parse(localStorage["taskRepository"]);
+  taskRepository.forEach(function (item) {
+    item.time = 0;
+  });
   localStorage["taskRepository"] = JSON.stringify(taskRepository);
 }
 
