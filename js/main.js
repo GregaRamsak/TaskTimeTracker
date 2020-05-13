@@ -105,6 +105,11 @@ $('body')
   .on('click', '.recording-item .time', function (evt) {
     if (evt.altKey) {
       evt.stopPropagation();
+      // Un-hide task names
+      if ($('#timeChangeDlg:visible').length != 0) {
+        $('.name').css('opacity', '1');
+      }
+
       let taskElement = $(this).parent()[0];
       // Show unchanged task name
       let nameDlg = $('#timeChangeDlg input')[0];
@@ -153,8 +158,10 @@ $('body')
     evt.stopPropagation();
     let taskId = $('#timeChangeDlg input')[0].getAttribute('for');
     // Show name
-    let taskNameElement = $('#' + taskId + ' .name');
-    taskNameElement.css('opacity', '1');
+    // let taskNameElement = $('#' + taskId + ' .name');
+    // taskNameElement.css('opacity', '1');
+    $('.name').css('opacity', '1');
+
     // Hide dialog
     $('#timeChangeDlg').hide();
   })
@@ -172,7 +179,7 @@ $('body')
     // Save changes on blur on press of the enter key
     if (evt.keyCode === 13) {
       let taskId = $(this)[0].getAttribute('for');
-      saveTaskNameAndHideNameDlg(taskId);
+      saveTaskNameAndHideNameDlg($(this)[0], taskId);
     }
   })
   /**
@@ -181,7 +188,7 @@ $('body')
   .on('blur', '#nameDlg input', function () {
     // Save changes on blur on press of the enter key
     let taskId = $(this)[0].getAttribute('for');
-    saveTaskNameAndHideNameDlg(taskId);
+    saveTaskNameAndHideNameDlg($(this)[0], taskId);
   });
 
 
@@ -247,12 +254,12 @@ function showNameDialog(element, taskId) {
  *
  * @param taskId
  */
-function saveTaskNameAndHideNameDlg(taskId) {
+function saveTaskNameAndHideNameDlg(element, taskId) {
   if (LOG_DEBUG)
-    console.log('Save task ', taskId, ' with new name:', $(this)[0].value);
+    console.log('Save task ', taskId, ' with new name:', element.value);
   // Update name
   let task1 = getTaskById(taskId);
-  task1.name = $(this)[0].value;
+  task1.name = element.value;
   changeTaskName(task1);
   // Update task's name on UI and show name
   let taskNameElement = $('#' + task1.id + ' .name');
